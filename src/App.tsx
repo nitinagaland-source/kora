@@ -25,6 +25,7 @@ import { CheckoutSuccessModal } from './components/CheckoutSuccessModal';
 import { CheckoutPage } from './components/CheckoutPage';
 import { PRODUCTS } from './data/products';
 import { Product, ProductCategory, ColorOption, CartItem } from './types';
+import { useFirestoreProducts } from './lib/firestoreHooks';
 import { AdminLayout } from './admin/AdminLayout';
 import { AdminGuard } from './admin/AdminGuard';
 import { LoginPage } from './admin/pages/LoginPage';
@@ -45,6 +46,33 @@ import { AuditLogPage } from './admin/pages/AuditLogPage';
 const queryClient = new QueryClient();
 
 function Storefront() {
+  const { products: fsProducts, loading: fsLoading } = useFirestoreProducts();
+
+  const mergedProducts: Product[] = React.useMemo(() => {
+    if (fsProducts.length === 0) return PRODUCTS;
+    return PRODUCTS.map(p => {
+      const fs = fsProducts.find(f => f.name === p.name);
+      if (!fs) return p;
+      return {
+        ...p,
+        price: fs.price,
+        originalPrice: fs.originalPrice || p.originalPrice,
+        description: fs.description || p.description,
+        fabricGsm: fs.fabricGsm || p.fabricGsm,
+        composition: fs.composition || p.composition,
+        silhouette: fs.silhouette || p.silhouette,
+        isNew: fs.isNew,
+        isBestseller: fs.isBestseller,
+        edition: fs.edition || p.edition,
+        images: {
+          primary: fs.primaryImage || p.images.primary,
+          secondary: fs.secondaryImage || p.images.secondary,
+          detail: fs.detailImage || p.images.detail,
+        },
+      };
+    });
+  }, [fsProducts]);
+
   const [currentView, setCurrentView] = useState<'store' | 'checkout'>('store');
   const [activeCategory, setActiveCategory] = useState<ProductCategory | 'all'>('all');
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -104,7 +132,7 @@ function Storefront() {
       <div className="min-h-screen bg-[#FBF9F5] text-[#111111] font-sans antialiased relative">
         <CheckoutPage cartItems={cartItems} wishlistCount={wishlist.length} onUpdateQuantity={handleUpdateQuantity} onRemoveItem={handleRemoveItem} onBackToShopping={() => { setCurrentView('store'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onOpenSearch={() => setIsSearchOpen(true)} onOpenWishlist={() => setIsWishlistOpen(true)} onOpenAccount={() => setIsAccountOpen(true)} onOrderSuccess={handleOrderSuccess} />
         <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} wishlistItems={wishlist} onRemoveWishlist={handleToggleWishlist} onQuickView={p => setQuickViewProduct(p)} />
-        <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} products={PRODUCTS} onSelectProduct={p => { setQuickViewProduct(p); setIsSearchOpen(false); }} />
+        <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} products={mergedProducts} onSelectProduct={p => { setQuickViewProduct(p); setIsSearchOpen(false); }} />
         <TrackOrderModal isOpen={isTrackOrderOpen} onClose={() => setIsTrackOrderOpen(false)} />
         <AccountModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} />
         <ProductQuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={handleAddToCart} />
@@ -120,14 +148,14 @@ function Storefront() {
       <CategoryStrip onSelectCategory={cat => setActiveCategory(cat)} />
       <HeavyweightStreetwearSection onSelectCategory={cat => setActiveCategory(cat)} />
       <TrustStrip />
-      <ProductGrid products={PRODUCTS} activeCategory={activeCategory} onSelectCategory={setActiveCategory} onQuickView={p => setQuickViewProduct(p)} onAddToCart={handleAddToCart} onToggleWishlist={handleToggleWishlist} isWishlisted={isWishlisted} />
+      <ProductGrid products={mergedProducts} activeCategory={activeCategory} onSelectCategory={setActiveCategory} onQuickView={p => setQuickViewProduct(p)} onAddToCart={handleAddToCart} onToggleWishlist={handleToggleWishlist} isWishlisted={isWishlisted} />
       <LookbookSection onShopLook={() => { const el = document.getElementById('products-section'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }} />
       <BrandPhilosophy />
       <Footer onSelectCategory={setActiveCategory} onOpenTrackOrder={() => { setTrackOrderId(''); setIsTrackOrderOpen(true); }} onOpenAccount={() => setIsAccountOpen(true)} onOpenExchangeModal={() => setIsExchangeModalOpen(true)} onOpenFabricationModal={() => setIsFabricationModalOpen(true)} onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)} />
       <ProductQuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={handleAddToCart} />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} items={cartItems} onUpdateQuantity={handleUpdateQuantity} onRemoveItem={handleRemoveItem} onCheckout={() => { setIsCartOpen(false); setCurrentView('checkout'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
       <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} wishlistItems={wishlist} onRemoveWishlist={handleToggleWishlist} onQuickView={p => setQuickViewProduct(p)} />
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} products={PRODUCTS} onSelectProduct={p => setQuickViewProduct(p)} />
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} products={mergedProducts} onSelectProduct={p => setQuickViewProduct(p)} />
       <TrackOrderModal isOpen={isTrackOrderOpen} onClose={() => { setIsTrackOrderOpen(false); setTrackOrderId(''); }} initialOrderId={trackOrderId} />
       <AccountModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} onOpenTrackOrder={ordId => { setTrackOrderId(ordId || ''); setIsTrackOrderOpen(true); }} onOpenExchangeModal={() => setIsExchangeModalOpen(true)} />
       <ExchangePolicyModal isOpen={isExchangeModalOpen} onClose={() => setIsExchangeModalOpen(false)} onOpenMyOrders={() => setIsAccountOpen(true)} />
