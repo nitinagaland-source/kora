@@ -40,15 +40,12 @@ export function ImageUploader({ value, onChange, label }: Props) {
     if (file) handleFile(file);
   };
 
+  const barStyle = { width: progress + '%', background: '#111111' };
+
   return (
     <div className="mb-4">
       <label className="block text-xs font-semibold uppercase tracking-widest mb-2" style={{color:'#111111'}}>{label}</label>
-      <div
-        onDrop={handleDrop}
-        onDragOver={e => e.preventDefault()}
-        className="border-2 border-dashed rounded-lg p-4 text-center"
-        style={{borderColor:'#C8B89A', background:'#F3F1EC'}}
-      >
+      <div onDrop={handleDrop} onDragOver={e => e.preventDefault()} className="border-2 border-dashed rounded-lg p-4 text-center" style={{borderColor:'#C8B89A',background:'#F3F1EC'}}>
         {value ? (
           <div className="relative inline-block">
             <img src={value} alt="preview" className="h-32 w-32 object-cover rounded-lg mx-auto" />
@@ -59,16 +56,14 @@ export function ImageUploader({ value, onChange, label }: Props) {
           </div>
         ) : (
           <div>
-            <p className="text-sm mb-2" style={{color:'#666'}}>Drag & drop or click to upload</p>
-            <button type="button" onClick={() => inputRef.current?.click()} className="text-sm px-4 py-2 rounded font-semibold" style={{background:'#111111',color:'#F3F1EC'}}>
-              Upload Image
-            </button>
+            <p className="text-sm mb-2" style={{color:'#666'}}>Drag and drop or click to upload</p>
+            <button type="button" onClick={() => inputRef.current?.click()} className="text-sm px-4 py-2 rounded font-semibold" style={{background:'#111111',color:'#F3F1EC'}}>Upload Image</button>
           </div>
         )}
         {uploading && (
           <div className="mt-3">
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="h-2 rounded-full transition-all" style={{width:${progress}%,background:'#111111'}}></div>
+              <div className="h-2 rounded-full transition-all" style={barStyle}></div>
             </div>
             <p className="text-xs mt-1">{progress}%</p>
           </div>
