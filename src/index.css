@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+    --font-mono-label: 'Space Grotesk', monospace, sans-serif;
+    --color-bone: #F3F1EC;
+    --color-ink: #111111;
+    --color-clay: #B85D3B;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-bone);
+    color: var(--color-ink);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.04em;
+  }
+
+  .font-label {
+    font-family: var(--font-mono-label);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #EAE7DF;
+}
+::-webkit-scrollbar-thumb {
+  background: #111111;
+}
+
+/* Subtle image scale interaction */
+.product-image-zoom {
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.group:hover .product-image-zoom {
+  transform: scale(1.04);
+}
+
+/* Animated underline on link hover */
+.hover-underline-animation {
+  position: relative;
+  display: inline-block;
+}
+.hover-underline-animation::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background-color: currentColor;
+  transform-origin: bottom right;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.hover-underline-animation:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Noise overlay for high-fashion print texture */
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+}

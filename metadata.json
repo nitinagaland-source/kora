@@ -1,0 +1,6 @@
+{
+  "name": "KORA",
+  "description": "Elevated minimal streetwear label engineered for ease. Specializing in architectural track pants, heavyweight t-shirts, and structured shirts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
