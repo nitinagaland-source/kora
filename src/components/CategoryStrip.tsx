@@ -27,8 +27,8 @@ export const CategoryStrip: React.FC<CategoryStripProps> = ({ onSelectCategory }
         const imgs: Record<string, string> = {};
         snap.forEach((doc) => {
           const data = doc.data();
-          if (data.slug && data.imageUrl) {
-            imgs[data.slug] = data.imageUrl;
+          if (data.slug && data.thumbnailImage) {
+            imgs[data.slug] = data.thumbnailImage;
           }
         });
         setCategoryImages(imgs);

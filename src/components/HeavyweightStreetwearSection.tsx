@@ -22,8 +22,8 @@ export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSection
         const imgs: Record<string, string> = {};
         snap.forEach((doc) => {
           const data = doc.data();
-          if (data.slug && data.imageUrl) {
-            imgs[data.slug] = data.imageUrl;
+          if (data.slug && data.thumbnailImage) {
+            imgs[data.slug] = data.thumbnailImage;
           }
         });
         setCategoryImages(imgs);
