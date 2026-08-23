@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { ProductCategory } from '../types';
 import oversizeTshirtImg from '../assets/images/kora_oversize_tshirt_upload.png';
 import hoodieImg from '../assets/images/kora_hoodie_metropolis_upload.png';
+import { db } from '../lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 interface HeavyweightStreetwearSectionProps {
   onSelectCategory: (category: ProductCategory) => void;
@@ -11,6 +13,30 @@ interface HeavyweightStreetwearSectionProps {
 export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSectionProps> = ({
   onSelectCategory,
 }) => {
+  const [categoryImages, setCategoryImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'categories'));
+        const imgs: Record<string, string> = {};
+        snap.forEach((doc) => {
+          const data = doc.data();
+          if (data.slug && data.imageUrl) {
+            imgs[data.slug] = data.imageUrl;
+          }
+        });
+        setCategoryImages(imgs);
+      } catch (err) {
+        console.error('Failed to fetch category images:', err);
+      }
+    };
+    fetchImages();
+  }, []);
+
+  const getImage = (slug: string, fallback: string) =>
+    categoryImages[slug] || fallback;
+
   const categories = [
     {
       id: 'oversize-tshirts' as ProductCategory,
@@ -18,7 +44,8 @@ export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSection
       title: 'OVERSIZE T-SHIRTS',
       subtitle: 'Exaggerated boxy cut with weighted drop-shoulder drape.',
       specs: '320 GSM Compact Cotton',
-      image: oversizeTshirtImg,
+      slug: 'oversize-tshirts',
+      fallback: oversizeTshirtImg,
     },
     {
       id: 'hoodies' as ProductCategory,
@@ -26,14 +53,15 @@ export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSection
       title: 'HOODIES',
       subtitle: 'Double-layer structured crossover hood with zero drawstrings.',
       specs: '480 GSM Loopback Terry',
-      image: hoodieImg,
+      slug: 'hoodies',
+      fallback: hoodieImg,
     },
   ];
 
   return (
     <section className="w-full bg-[#111111] text-[#F3F1EC] py-14 sm:py-20 border-b border-[#222222]">
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
-        
+
         {/* Section Header */}
         <div className="flex items-end justify-between mb-10 pb-4 border-b border-[#262626]">
           <div className="space-y-1">
@@ -49,7 +77,7 @@ export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSection
           </span>
         </div>
 
-        {/* 2-Column Grid matching the Category Strip exactly */}
+        {/* 2-Column Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {categories.map((cat) => (
             <div
@@ -62,10 +90,9 @@ export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSection
               className="group cursor-pointer flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#262626] last:border-r-0 pb-8 md:pb-0 md:pr-8 last:pr-0 transition-colors"
             >
               <div>
-                {/* Image Container with Exact Same Aspect Ratio & Badges */}
                 <div className="relative aspect-[4/4.8] w-full overflow-hidden bg-[#1D1D1D] mb-6">
                   <img
-                    src={cat.image}
+                    src={getImage(cat.slug, cat.fallback)}
                     alt={cat.title}
                     className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
@@ -76,7 +103,6 @@ export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSection
                   </div>
                 </div>
 
-                {/* Typography & Details */}
                 <div className="space-y-2">
                   <h3 className="text-lg sm:text-xl font-display font-bold tracking-tight text-[#F3F1EC] group-hover:text-[#E2DFD7] transition-colors">
                     {cat.title}
@@ -87,7 +113,6 @@ export const HeavyweightStreetwearSection: React.FC<HeavyweightStreetwearSection
                 </div>
               </div>
 
-              {/* Shop CTA Link */}
               <div className="mt-6 pt-4 border-t border-[#222222] flex items-center justify-between text-[11px] font-label tracking-[0.2em] text-[#E2DFD7] group-hover:text-[#B85D3B] transition-colors">
                 <span>SHOP {cat.title}</span>
                 <ArrowRight size={14} className="transform group-hover:translate-x-1.5 transition-transform" />
