@@ -26,6 +26,8 @@ import { CheckoutPage } from './components/CheckoutPage';
 import { PRODUCTS } from './data/products';
 import { Product, ProductCategory, ColorOption, CartItem } from './types';
 import { useFirestoreProducts } from './lib/firestoreHooks';
+import { db } from './lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { AdminLayout } from './admin/AdminLayout';
 import { AdminGuard } from './admin/AdminGuard';
 import { LoginPage } from './admin/pages/LoginPage';
@@ -117,10 +119,30 @@ function Storefront() {
   const scrollToLookbook = () => { const el = document.getElementById('lookbook-section'); if (el) el.scrollIntoView({ behavior: 'smooth' }); };
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleOrderSuccess = (orderId: string, purchasedItems: CartItem[], customerName: string) => {
+  const handleOrderSuccess = async (orderId: string, purchasedItems: CartItem[], customerName: string) => {
     const totalAmount = purchasedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    const newOrder: SavedOrder = { orderId, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), customerName: customerName || 'Studio Member', items: purchasedItems, total: totalAmount, status: 'PROCESSING', trackingNumber: 'AWB-' + Math.floor(10000000 + Math.random() * 90000000) };
+    const trackingNumber = 'AWB-' + Math.floor(10000000 + Math.random() * 90000000);
+    const newOrder: SavedOrder = { orderId, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), customerName: customerName || 'Studio Member', items: purchasedItems, total: totalAmount, status: 'PROCESSING', trackingNumber };
     try { const existing = localStorage.getItem('kora_orders'); const ordersList: SavedOrder[] = existing ? JSON.parse(existing) : []; localStorage.setItem('kora_orders', JSON.stringify([newOrder, ...ordersList])); } catch {}
+    try {
+      await setDoc(doc(db, 'orders', orderId), {
+        orderId,
+        customerName: customerName || 'Studio Member',
+        email: '',
+        total: totalAmount,
+        status: 'PROCESSING',
+        paymentStatus: 'PENDING',
+        trackingNumber,
+        items: purchasedItems.map(i => ({
+          name: i.product.name,
+          qty: i.quantity,
+          price: i.product.price,
+          color: i.selectedColor.name,
+          size: i.selectedSize,
+        })),
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) { console.error('Order save to Firestore failed:', err); }
     setCheckoutData({ items: purchasedItems, orderId });
     setCartItems([]);
     setCurrentView('store');
