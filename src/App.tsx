@@ -119,7 +119,7 @@ function Storefront() {
   const scrollToLookbook = () => { const el = document.getElementById('lookbook-section'); if (el) el.scrollIntoView({ behavior: 'smooth' }); };
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleOrderSuccess = async (orderId: string, purchasedItems: CartItem[], customerName: string) => {
+  const handleOrderSuccess = async (orderId: string, purchasedItems: CartItem[], customerName: string, customerDetails?: { phone: string; email: string; city: string; streetAddress: string; zipCode: string; paymentMethod: string }) => {
     const totalAmount = purchasedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const trackingNumber = 'AWB-' + Math.floor(10000000 + Math.random() * 90000000);
     const newOrder: SavedOrder = { orderId, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), customerName: customerName || 'Studio Member', items: purchasedItems, total: totalAmount, status: 'PROCESSING', trackingNumber };
@@ -128,7 +128,12 @@ function Storefront() {
       await setDoc(doc(db, 'orders', orderId), {
         orderId,
         customerName: customerName || 'Studio Member',
-        email: '',
+        email: customerDetails?.email || '',
+        phone: customerDetails?.phone || '',
+        city: customerDetails?.city || '',
+        streetAddress: customerDetails?.streetAddress || '',
+        zipCode: customerDetails?.zipCode || '',
+        paymentMethod: customerDetails?.paymentMethod || '',
         total: totalAmount,
         status: 'PROCESSING',
         paymentStatus: 'PENDING',

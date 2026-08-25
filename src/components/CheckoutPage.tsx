@@ -24,7 +24,7 @@ interface CheckoutPageProps {
   onOpenSearch: () => void;
   onOpenWishlist: () => void;
   onOpenAccount: () => void;
-  onOrderSuccess: (orderId: string, purchasedItems: CartItem[], customerName: string) => void;
+  onOrderSuccess: (orderId: string, purchasedItems: CartItem[], customerName: string, customerDetails?: { phone: string; email: string; city: string; streetAddress: string; zipCode: string; paymentMethod: string }) => void;
 }
 
 export const CheckoutPage: React.FC<CheckoutPageProps> = ({
@@ -89,7 +89,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     setTimeout(() => {
       const generatedOrderId = `KR-${Math.floor(100000 + Math.random() * 900000)}`;
       const buyerName = fullName.trim() || 'Client';
-      onOrderSuccess(generatedOrderId, [...cartItems], buyerName);
+      onOrderSuccess(generatedOrderId, [...cartItems], buyerName, {
+        phone,
+        email,
+        city,
+        streetAddress,
+        zipCode,
+        paymentMethod,
+      });
       setIsSubmitting(false);
     }, 900);
   };

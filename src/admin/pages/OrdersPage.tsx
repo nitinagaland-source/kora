@@ -8,16 +8,22 @@ interface Order {
   orderId: string;
   customerName: string;
   email: string;
+  phone: string;
+  city: string;
+  streetAddress: string;
+  zipCode: string;
+  paymentMethod: string;
   total: number;
   status: string;
   paymentStatus: string;
+  trackingNumber: string;
   createdAt: { seconds: number } | null;
   items: { name: string; qty: number; price?: number; color?: string; size?: string }[];
 }
 
 const STATUSES = ['PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED', 'RETURNED'];
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+const SC: Record<string, { bg: string; text: string }> = {
   PROCESSING: { bg: '#fff3e0', text: '#e65100' },
   PACKED:     { bg: '#e3f2fd', text: '#1565c0' },
   SHIPPED:    { bg: '#ede7f6', text: '#4527a0' },
@@ -50,9 +56,7 @@ export function OrdersPage() {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    } catch (err) {
-      console.error('Status update failed:', err);
-    }
+    } catch (err) { console.error(err); }
     setUpdating(null);
   };
 
@@ -61,13 +65,11 @@ export function OrdersPage() {
     try {
       await updateDoc(doc(db, 'orders', orderId), { paymentStatus: newStatus });
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentStatus: newStatus } : o));
-    } catch (err) {
-      console.error('Payment status update failed:', err);
-    }
+    } catch (err) { console.error(err); }
     setUpdating(null);
   };
 
-  const sc = (s: string) => STATUS_COLORS[s] || { bg: '#f5f5f5', text: '#333' };
+  const sc = (s: string) => SC[s] || { bg: '#f5f5f5', text: '#333' };
 
   return (
     <div>
@@ -80,9 +82,7 @@ export function OrdersPage() {
         </button>
       </div>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : orders.length === 0 ? (
+      {loading ? <p>Loading...</p> : orders.length === 0 ? (
         <div className="rounded-xl p-8 text-center" style={{ background: '#fff' }}>
           <p className="font-semibold mb-1" style={{ color: '#111' }}>No orders yet</p>
           <p className="text-sm" style={{ color: '#666' }}>Orders placed on the storefront will appear here.</p>
@@ -102,33 +102,26 @@ export function OrdersPage() {
                 <>
                   <tr key={o.id} className="border-t" style={{ borderColor: '#F3F1EC' }}>
                     <td className="px-4 py-3 font-mono text-xs font-bold">{o.orderId || o.id.slice(0, 8)}</td>
-                    <td className="px-4 py-3 font-semibold">{o.customerName}</td>
+                    <td className="px-4 py-3">
+                      <p className="font-semibold">{o.customerName}</p>
+                      {o.phone && <p className="text-xs" style={{ color: '#888' }}>{o.phone}</p>}
+                    </td>
                     <td className="px-4 py-3 text-xs" style={{ color: '#666' }}>
                       {o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleDateString('en-IN') : '-'}
                     </td>
                     <td className="px-4 py-3">{o.items?.length || 0}</td>
                     <td className="px-4 py-3 font-semibold">{formatINR(o.total)}</td>
-
-                    {/* Status Dropdown */}
                     <td className="px-4 py-3">
                       <select
                         value={o.status}
                         disabled={updating === o.id}
                         onChange={e => handleStatusChange(o.id, e.target.value)}
                         className="text-xs font-semibold px-2 py-1 rounded-full border-0 outline-none cursor-pointer"
-                        style={{
-                          background: sc(o.status).bg,
-                          color: sc(o.status).text,
-                          opacity: updating === o.id ? 0.5 : 1,
-                        }}
+                        style={{ background: sc(o.status).bg, color: sc(o.status).text, opacity: updating === o.id ? 0.5 : 1 }}
                       >
-                        {STATUSES.map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
+                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </td>
-
-                    {/* Payment Status Dropdown */}
                     <td className="px-4 py-3">
                       <select
                         value={o.paymentStatus || 'PENDING'}
@@ -147,38 +140,46 @@ export function OrdersPage() {
                         <option value="REFUNDED">REFUNDED</option>
                       </select>
                     </td>
-
-                    {/* Expand toggle */}
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => setExpanded(expanded === o.id ? null : o.id)}
-                        className="text-xs underline"
-                        style={{ color: '#666' }}
-                      >
+                      <button onClick={() => setExpanded(expanded === o.id ? null : o.id)} className="text-xs underline" style={{ color: '#666' }}>
                         {expanded === o.id ? 'Hide' : 'View'}
                       </button>
                     </td>
                   </tr>
 
-                  {/* Expanded order items row */}
                   {expanded === o.id && (
-                    <tr key={o.id + '_expanded'} style={{ background: '#fafafa' }}>
+                    <tr key={o.id + '_exp'} style={{ background: '#fafafa' }}>
                       <td colSpan={8} className="px-6 py-4">
-                        <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#888' }}>Order Items</p>
-                        <div className="space-y-1">
-                          {o.items?.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-4 text-xs" style={{ color: '#333' }}>
-                              <span className="font-semibold">{item.name}</span>
-                              {item.color && <span style={{ color: '#888' }}>Color: {item.color}</span>}
-                              {item.size && <span style={{ color: '#888' }}>Size: {item.size}</span>}
-                              <span style={{ color: '#888' }}>Qty: {item.qty}</span>
-                              {item.price && <span className="font-mono">{formatINR(item.price * item.qty)}</span>}
+                        <div className="grid grid-cols-2 gap-6">
+                          {/* Customer Details */}
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#888' }}>Customer Details</p>
+                            <div className="space-y-1 text-xs" style={{ color: '#333' }}>
+                              <p><span className="font-semibold">Name:</span> {o.customerName}</p>
+                              {o.email && <p><span className="font-semibold">Email:</span> {o.email}</p>}
+                              {o.phone && <p><span className="font-semibold">Phone:</span> {o.phone}</p>}
+                              {o.streetAddress && <p><span className="font-semibold">Address:</span> {o.streetAddress}</p>}
+                              {o.city && <p><span className="font-semibold">City:</span> {o.city} {o.zipCode}</p>}
+                              {o.paymentMethod && <p><span className="font-semibold">Payment:</span> {o.paymentMethod.toUpperCase()}</p>}
+                              {o.trackingNumber && <p><span className="font-semibold">Tracking:</span> {o.trackingNumber}</p>}
                             </div>
-                          ))}
+                          </div>
+                          {/* Order Items */}
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#888' }}>Order Items</p>
+                            <div className="space-y-1">
+                              {o.items?.map((item, idx) => (
+                                <div key={idx} className="text-xs flex gap-3 flex-wrap" style={{ color: '#333' }}>
+                                  <span className="font-semibold">{item.name}</span>
+                                  {item.color && <span style={{ color: '#888' }}>Color: {item.color}</span>}
+                                  {item.size && <span style={{ color: '#888' }}>Size: {item.size}</span>}
+                                  <span style={{ color: '#888' }}>Qty: {item.qty}</span>
+                                  {item.price && <span className="font-mono">{formatINR(item.price * item.qty)}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                        {o.email && (
-                          <p className="text-xs mt-2" style={{ color: '#888' }}>Email: {o.email}</p>
-                        )}
                       </td>
                     </tr>
                   )}
