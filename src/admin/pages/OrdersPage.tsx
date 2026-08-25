@@ -36,6 +36,8 @@ export function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [awbEdit, setAwbEdit] = useState<Record<string, string>>({});
+  const [awbSaving, setAwbSaving] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -44,6 +46,10 @@ export function OrdersPage() {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
         list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         setOrders(list);
+        // Init AWB edit state
+        const awbMap: Record<string, string> = {};
+        list.forEach(o => { awbMap[o.id] = o.trackingNumber || ''; });
+        setAwbEdit(awbMap);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -67,6 +73,16 @@ export function OrdersPage() {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, paymentStatus: newStatus } : o));
     } catch (err) { console.error(err); }
     setUpdating(null);
+  };
+
+  const handleSaveAwb = async (orderId: string) => {
+    const newAwb = awbEdit[orderId] || '';
+    setAwbSaving(orderId);
+    try {
+      await updateDoc(doc(db, 'orders', orderId), { trackingNumber: newAwb });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, trackingNumber: newAwb } : o));
+    } catch (err) { console.error(err); }
+    setAwbSaving(null);
   };
 
   const sc = (s: string) => SC[s] || { bg: '#f5f5f5', text: '#333' };
@@ -149,36 +165,63 @@ export function OrdersPage() {
 
                   {expanded === o.id && (
                     <tr key={o.id + '_exp'} style={{ background: '#fafafa' }}>
-                      <td colSpan={8} className="px-6 py-4">
-                        <div className="grid grid-cols-2 gap-6">
+                      <td colSpan={8} className="px-6 py-5">
+                        <div className="grid grid-cols-2 gap-8">
+
                           {/* Customer Details */}
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#888' }}>Customer Details</p>
-                            <div className="space-y-1 text-xs" style={{ color: '#333' }}>
-                              <p><span className="font-semibold">Name:</span> {o.customerName}</p>
-                              {o.email && <p><span className="font-semibold">Email:</span> {o.email}</p>}
-                              {o.phone && <p><span className="font-semibold">Phone:</span> {o.phone}</p>}
-                              {o.streetAddress && <p><span className="font-semibold">Address:</span> {o.streetAddress}</p>}
-                              {o.city && <p><span className="font-semibold">City:</span> {o.city} {o.zipCode}</p>}
-                              {o.paymentMethod && <p><span className="font-semibold">Payment:</span> {o.paymentMethod.toUpperCase()}</p>}
-                              {o.trackingNumber && <p><span className="font-semibold">Tracking:</span> {o.trackingNumber}</p>}
+                            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#888' }}>Customer Details</p>
+                            <div className="space-y-1.5 text-xs" style={{ color: '#333' }}>
+                              <p><span className="font-semibold" style={{color:'#111'}}>Name:</span> {o.customerName || '—'}</p>
+                              <p><span className="font-semibold" style={{color:'#111'}}>Email:</span> {o.email || <span style={{color:'#aaa'}}>Not provided</span>}</p>
+                              <p><span className="font-semibold" style={{color:'#111'}}>Phone:</span> {o.phone || <span style={{color:'#aaa'}}>Not provided</span>}</p>
+                              <p><span className="font-semibold" style={{color:'#111'}}>Address:</span> {o.streetAddress || <span style={{color:'#aaa'}}>Not provided</span>}</p>
+                              <p><span className="font-semibold" style={{color:'#111'}}>City / ZIP:</span> {o.city ? `${o.city}${o.zipCode ? ' — ' + o.zipCode : ''}` : <span style={{color:'#aaa'}}>Not provided</span>}</p>
+                              <p><span className="font-semibold" style={{color:'#111'}}>Payment Method:</span> {o.paymentMethod ? o.paymentMethod.toUpperCase() : <span style={{color:'#aaa'}}>Not provided</span>}</p>
+                            </div>
+
+                            {/* AWB / Tracking Number — manual entry */}
+                            <div className="mt-4">
+                              <p className="text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: '#888' }}>AWB / Tracking Number</p>
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  type="text"
+                                  value={awbEdit[o.id] || ''}
+                                  onChange={e => setAwbEdit(prev => ({ ...prev, [o.id]: e.target.value }))}
+                                  placeholder="Enter AWB number..."
+                                  className="border rounded-lg px-3 py-1.5 text-xs font-mono flex-1 outline-none"
+                                  style={{ borderColor: '#C8B89A', background: '#F3F1EC' }}
+                                />
+                                <button
+                                  onClick={() => handleSaveAwb(o.id)}
+                                  disabled={awbSaving === o.id}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                                  style={{ background: '#111111', color: '#F3F1EC', opacity: awbSaving === o.id ? 0.5 : 1 }}
+                                >
+                                  {awbSaving === o.id ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
                             </div>
                           </div>
+
                           {/* Order Items */}
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#888' }}>Order Items</p>
-                            <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#888' }}>Order Items</p>
+                            <div className="space-y-2">
                               {o.items?.map((item, idx) => (
-                                <div key={idx} className="text-xs flex gap-3 flex-wrap" style={{ color: '#333' }}>
-                                  <span className="font-semibold">{item.name}</span>
-                                  {item.color && <span style={{ color: '#888' }}>Color: {item.color}</span>}
-                                  {item.size && <span style={{ color: '#888' }}>Size: {item.size}</span>}
-                                  <span style={{ color: '#888' }}>Qty: {item.qty}</span>
-                                  {item.price && <span className="font-mono">{formatINR(item.price * item.qty)}</span>}
+                                <div key={idx} className="text-xs p-2 rounded-lg" style={{ background: '#F3F1EC' }}>
+                                  <p className="font-semibold" style={{ color: '#111' }}>{item.name}</p>
+                                  <div className="flex gap-3 mt-0.5 flex-wrap" style={{ color: '#666' }}>
+                                    {item.color && <span>Color: {item.color}</span>}
+                                    {item.size && <span>Size: {item.size}</span>}
+                                    <span>Qty: {item.qty}</span>
+                                    {item.price && <span className="font-mono font-semibold" style={{color:'#111'}}>{formatINR(item.price * item.qty)}</span>}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           </div>
+
                         </div>
                       </td>
                     </tr>
