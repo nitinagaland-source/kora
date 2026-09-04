@@ -71,6 +71,12 @@ function Storefront() {
           secondary: fs.secondaryImage || p.images.secondary,
           detail: fs.detailImage || p.images.detail,
         },
+        productType: fs.productType || 'standard',
+        poloColors: fs.poloColors || [],
+        // For polo products, override colors with the polo color swatches
+        colors: (fs.productType === 'polo' && fs.computedColors && fs.computedColors.length > 0)
+          ? fs.computedColors
+          : p.colors,
       };
     });
   }, [fsProducts]);

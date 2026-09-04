@@ -29,6 +29,8 @@ export interface Product {
   isNew?: boolean;
   isBestseller?: boolean;
   edition?: string;
+  productType?: 'standard' | 'polo';
+  poloColors?: string[];
 }
 
 export interface CartItem {
